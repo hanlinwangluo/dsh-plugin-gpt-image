@@ -20,8 +20,12 @@
 | 方式 | 填什么 |
 |---|---|
 | npm（已发布） | `dsh-plugin-gpt-image` |
+| GitHub | `git+https://github.com/hanlinwangluo/dsh-plugin-gpt-image.git` |
+| Gitee | `git+https://gitee.com/yuhanlin2026/dsh-plugin-gpt-image.git` |
 | 本地目录 | 解压后该目录的绝对路径，例如 `D:\plugins\dsh-plugin-gpt-image` |
-| Gitee / GitHub | `git+https://gitee.com/<你>/dsh-plugin-gpt-image.git` |
+
+仓库：[GitHub](https://github.com/hanlinwangluo/dsh-plugin-gpt-image) ·
+[Gitee](https://gitee.com/yuhanlin2026/dsh-plugin-gpt-image)
 
 装好即生效；打开 **设置 → GPT 生图** 填自己的密钥即可。安装需要会话具备
 `danger-full-access` 或一次明确批准（插件代码在 Host 进程、工作区沙箱之外执行）。
