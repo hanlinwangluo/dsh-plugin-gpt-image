@@ -9,7 +9,7 @@
 默认中转 `https://ai.stjapi.com`，默认模型 `gpt-image-2.6-flare`。生成的图片写进工作区
 `gpt-images/`，当前模型支持图片输入时会一并附到对话里。
 
-- 包名：`dsh-plugin-gpt-image`　版本：`1.3.5`
+- 包名：`dsh-plugin-gpt-image`　版本：`1.3.6`
 - 适配：DSH `>=0.2.1-0 <0.3.0`（`engines.dsh`，不满足时安装会被明确拒绝）
 - 运行时零第三方依赖，只需要 Node 内置能力
 

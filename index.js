@@ -944,6 +944,9 @@ async function handleFileRoute(req, res, ctx, config) {
     res.statusCode = 200
     res.setHeader('content-type', mediaType)
     res.setHeader('cache-control', 'no-store')
+    if (url.searchParams.get('download') === '1') {
+      res.setHeader('content-disposition', `attachment; filename="${name}"`)
+    }
     res.setHeader('content-length', bytes.byteLength)
     res.end(bytes)
   } catch (error) {
