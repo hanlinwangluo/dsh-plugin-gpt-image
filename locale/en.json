@@ -1,0 +1,6 @@
+{
+  "meta": {
+    "title": "GPT Image Generator",
+    "description": "Generates images with the GPT image API and saves them into the workspace. Settings → GPT Image stores your own base URL and API key; adds the image_generate and image_configure tools."
+  }
+}

@@ -1,0 +1,13 @@
+- insert:
+    - id: gpt-image
+      name: 'dsh-plugin-gpt-image'
+      config:
+        baseUrl: https://ai.stjapi.com
+        # Leave empty and fill your key in Settings → GPT Image (stored per profile),
+        # or set the GPT_IMAGE_API_KEY environment variable.
+        apiKey: ''
+        model: gpt-image-2.6-flare
+        size: 1024x1024
+        quality: auto
+        background: auto
+        outputDir: gpt-images

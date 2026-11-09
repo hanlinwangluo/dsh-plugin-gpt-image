@@ -1,0 +1,6 @@
+{
+  "meta": {
+    "title": "GPT 生图",
+    "description": "通过 GPT 生图接口生成图片并保存到工作区。在「设置 → GPT 生图」里填写自己的 API 地址和密钥；提供 image_generate 与 image_configure 两个工具。"
+  }
+}

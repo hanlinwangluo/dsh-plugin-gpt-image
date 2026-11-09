@@ -1,0 +1,44 @@
+{
+  "name": "dsh-plugin-gpt-image",
+  "version": "1.3.0",
+  "description": "GPT image generation and editing for DeepSeek Harness: image_generate and image_edit tools, plus an in-app settings page with connection test, model picker, and gallery.",
+  "type": "module",
+  "license": "MIT",
+  "keywords": [
+    "dsh",
+    "dsh-plugin",
+    "deepseek-harness",
+    "image",
+    "text-to-image",
+    "image-edit",
+    "gpt-image"
+  ],
+  "exports": {
+    ".": "./index.js",
+    "./client": "./lib/client.js",
+    "./locale/*.json": "./locale/*.json",
+    "./icon": "./icon.svg",
+    "./package.json": "./package.json"
+  },
+  "files": [
+    "index.js",
+    "lib/client.js",
+    "cordis.patch.yml",
+    "locale/*.json",
+    "icon.svg",
+    "README.md",
+    "RELEASING.md",
+    "LICENSE"
+  ],
+  "engines": {
+    "dsh": ">=0.2.1-0 <0.3.0"
+  },
+  "dsh": {
+    "bundle": { "patch": "./cordis.patch.yml" },
+    "client": {
+      "platform": "web",
+      "immediately": true,
+      "inject": ["@deepseek-ai/dsh-client-ui-settings"]
+    }
+  }
+}
