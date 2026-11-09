@@ -528,7 +528,12 @@ async function routeAcceptsImageInput(ctx, exec) {
     const model = routed?.model ?? exec.agent?.options?.model
     const llm = ctx.get('llm')
     if (provider === undefined || model === undefined || llm === undefined) return false
-    const info = await llm.resolveModelInfo(provider, model, exec.signal)
+    // A slow provider lookup must not hang a generation whose file is already
+    // written: after four seconds the call reports "no image block" instead.
+    const signal = typeof AbortSignal.any === 'function' && typeof AbortSignal.timeout === 'function'
+      ? AbortSignal.any([exec.signal, AbortSignal.timeout(4000)])
+      : exec.signal
+    const info = await llm.resolveModelInfo(provider, model, signal)
     return Array.isArray(info?.inputModalities) && info.inputModalities.includes('image')
   } catch {
     return false
@@ -692,7 +697,15 @@ async function persistImages(options) {
     if (typeof items[index]?.url === 'string' && items[index].url.length > 0) entry.sourceUrl = items[index].url
     if (attachments !== undefined) {
       try {
-        const ref = await attachments.saveImage({ data: new Uint8Array(data), mediaType, name: storedName })
+        // The file is already on disk; a slow attachment store must not keep the
+        // whole tool call open, so give the save its own deadline.
+        const ref = await Promise.race([
+          attachments.saveImage({ data: new Uint8Array(data), mediaType, name: storedName }),
+          new Promise((_, reject) => {
+            const timer = setTimeout(() => reject(new Error('attachment save timed out')), 10000)
+            if (typeof timer.unref === 'function') timer.unref()
+          }),
+        ])
         entry.image = {
           attachmentId: ref.attachmentId,
           mediaType: ref.mediaType,
