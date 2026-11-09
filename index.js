@@ -1026,6 +1026,25 @@ function resolveCall(args, settings) {
  * @param config - the bundle row's raw configuration.
  */
 export function apply(ctx, config) {
+  // A single failed registration must never abort the whole Harness boot: the
+  // app shows "entry did not activate" and refuses to start. Degrade instead.
+  try {
+    activate(ctx, config)
+  } catch (error) {
+    try {
+      console.error('[gpt-image] activation degraded:', error)
+    } catch {
+      // Logging must not turn a degraded plugin into a failed boot either.
+    }
+  }
+}
+
+/**
+ * Register every part of the plugin; `apply` isolates its failures.
+ * @param ctx - the plugin context.
+ * @param config - the bundle row's raw configuration.
+ */
+function activate(ctx, config) {
   ctx.tools.register({
     name: 'image_generate',
     description: 'Generate images with the GPT image API and save them as files in the workspace. Use it whenever the user asks for a picture, illustration, icon, photo, or poster instead of describing the image in text. Returns the saved absolute file paths; when the current model accepts image input the images are also attached to the conversation. Present the returned images instead of verifying them with extra tool calls.',
