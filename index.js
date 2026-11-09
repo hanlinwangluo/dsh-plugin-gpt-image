@@ -62,6 +62,7 @@ const IMAGE_POLICY = `## Image work
 - When the user asks for a new picture, illustration, icon, poster, avatar, or any other visual asset, call \`image_generate\`.
 - When the user asks to change an existing image (recolor, restyle, replace or remove an object, extend the frame), call \`image_edit\` with that file.
 - Do not produce a picture by writing code — image libraries (PIL, numpy, opencv, sharp), ffmpeg filters, canvas, or hand-written SVG — unless the user explicitly asks for programmatic batch processing or pixel-exact operations that a generative model cannot express.
+- If a call fails or times out, report the error and offer to retry. Never fall back to drawing or editing the picture with code.
 - If a request needs both, generate or edit the image with the tool first, then use code only for non-visual steps such as resizing files or building a contact sheet.`
 
 /** Defaults used when neither the stored options nor the bundle row set a field. */
@@ -70,9 +71,10 @@ const DEFAULTS = {
   model: 'gpt-image-2.6-flare',
   size: '1024x1024',
   quality: 'auto',
+  responseFormat: 'b64',
   background: 'auto',
   outputDir: 'gpt-images',
-  timeoutMs: 180000,
+  timeoutMs: 240000,
 }
 
 /** Output shape of one stored image attachment, mirroring the host's image value schema. */
@@ -191,6 +193,7 @@ function bundleDefaults(config) {
     size: text(config?.size) ?? DEFAULTS.size,
     quality: QUALITIES.includes(text(config?.quality)) ? text(config.quality) : DEFAULTS.quality,
     background: BACKGROUNDS.includes(text(config?.background)) ? text(config.background) : DEFAULTS.background,
+    responseFormat: text(config?.responseFormat) === 'url' ? 'url' : DEFAULTS.responseFormat,
     outputDir: text(config?.outputDir) ?? DEFAULTS.outputDir,
     timeoutMs: Number.isFinite(config?.timeoutMs) ? config.timeoutMs : DEFAULTS.timeoutMs,
   }
@@ -215,6 +218,7 @@ async function currentSettings(config) {
     size: pick('size', SIZES) ?? defaults.size,
     quality: pick('quality', QUALITIES) ?? defaults.quality,
     background: pick('background', BACKGROUNDS) ?? defaults.background,
+    responseFormat: pick('responseFormat', ['b64', 'url']) ?? defaults.responseFormat,
     outputDir: pick('outputDir') ?? defaults.outputDir,
     timeoutMs: Number.isFinite(stored.timeoutMs) ? stored.timeoutMs : defaults.timeoutMs,
   }
@@ -452,6 +456,21 @@ async function fetchWithRetry(url, init, signal, retries = 2) {
 }
 
 /**
+ * Describe a failed image request, calling out the timeout case explicitly.
+ * @param endpoint - the request URL.
+ * @param error - the thrown error.
+ * @param timeoutMs - the configured ceiling in milliseconds.
+ * @returns the message for the model and the user.
+ */
+function describeFetchFailure(endpoint, error, timeoutMs) {
+  if (error?.name === 'AbortError') {
+    const seconds = Math.round((Number.isFinite(timeoutMs) ? timeoutMs : 240000) / 1000)
+    return `the image API did not answer within ${seconds}s at ${endpoint}; the provider may still have produced the image — retry, or check its web gallery`
+  }
+  return `could not reach the image API at ${endpoint}: ${error instanceof Error ? error.message : String(error)}`
+}
+
+/**
  * Resolve an endpoint under the configured base URL.
  * @param baseUrl - the API base URL.
  * @param path - the endpoint path.
@@ -555,7 +574,9 @@ async function requestGeneration(settings, request, signal) {
     prompt: request.prompt,
     n: request.n,
     size: request.size,
-    response_format: 'b64_json',
+    // Inline base64 keeps the transfer on the API host. A `url` response is small
+    // but adds a second hop to a CDN that some networks stall on, so it is opt-in.
+    response_format: settings.responseFormat === 'url' ? 'url' : 'b64_json',
   }
   if (request.quality !== 'auto') body.quality = request.quality
   if (request.background !== 'auto') body.background = request.background
@@ -571,7 +592,7 @@ async function requestGeneration(settings, request, signal) {
       body: JSON.stringify(body),
     }, signal)
   } catch (error) {
-    throw new Error(`could not reach the image API at ${endpoint}: ${error instanceof Error ? error.message : String(error)}`)
+    throw new Error(describeFetchFailure(endpoint, error, settings.timeoutMs))
   }
   return readImageResponse(response)
 }
@@ -594,6 +615,7 @@ async function requestEdit(settings, request, signal) {
   form.append('model', request.model)
   form.append('prompt', request.prompt)
   form.append('size', request.size)
+  form.append('response_format', settings.responseFormat === 'url' ? 'url' : 'b64_json')
   if (request.n > 1) form.append('n', String(request.n))
   if (request.quality !== 'auto') form.append('quality', request.quality)
   if (request.background !== 'auto') form.append('background', request.background)
@@ -606,25 +628,32 @@ async function requestEdit(settings, request, signal) {
       body: form,
     }, signal)
   } catch (error) {
-    throw new Error(`could not reach the image API at ${endpoint}: ${error instanceof Error ? error.message : String(error)}`)
+    throw new Error(describeFetchFailure(endpoint, error, settings.timeoutMs))
   }
   return readImageResponse(response)
 }
 
 /**
- * Decode one response item: inline base64 first, then a download fallback.
+ * Decode one response item: a small URL first, then an inline base64 body.
  * @param item - one entry of the response `data` array.
  * @param signal - cancellation and timeout signal.
  * @returns the decoded image bytes.
  */
 async function decodeItem(item, signal) {
-  if (typeof item?.b64_json === 'string' && item.b64_json.length > 0) return Buffer.from(item.b64_json, 'base64')
   if (typeof item?.url === 'string' && item.url.length > 0) {
-    const response = await fetchWithRetry(item.url, {}, signal)
-    if (!response.ok) throw new Error(`could not download the generated image (${response.status} ${response.statusText})`)
-    return Buffer.from(await response.arrayBuffer())
+    // The generation budget is already spent by the time the URL arrives, so the
+    // download keeps its own deadline instead of inheriting the near-expired one.
+    const downloadSignal = AbortSignal.timeout(120000)
+    try {
+      const response = await fetchWithRetry(item.url, {}, downloadSignal, 2)
+      if (!response.ok) throw new Error(`HTTP ${response.status} ${response.statusText}`)
+      return Buffer.from(await response.arrayBuffer())
+    } catch (error) {
+      throw new Error(`the image was generated but downloading it failed (${error instanceof Error ? error.message : String(error)}); the file is still available at ${item.url}`)
+    }
   }
-  throw new Error('the image API returned neither b64_json nor url')
+  if (typeof item?.b64_json === 'string' && item.b64_json.length > 0) return Buffer.from(item.b64_json, 'base64')
+  throw new Error('the image API returned neither url nor b64_json')
 }
 
 /**
