@@ -63,6 +63,7 @@ const IMAGE_POLICY = `## Image work
 - When the user asks to change an existing image (recolor, restyle, replace or remove an object, extend the frame), call \`image_edit\` with that file.
 - Do not produce a picture by writing code — image libraries (PIL, numpy, opencv, sharp), ffmpeg filters, canvas, or hand-written SVG — unless the user explicitly asks for programmatic batch processing or pixel-exact operations that a generative model cannot express.
 - If a call fails or times out, report the error and offer to retry. Never fall back to drawing or editing the picture with code.
+- When \`image_generate\` or \`image_edit\` returns an image, show it and stop. Do not crop, diff, or otherwise inspect the result with code unless the user explicitly asks you to check a detail.
 - If a request needs both, generate or edit the image with the tool first, then use code only for non-visual steps such as resizing files or building a contact sheet.`
 
 /** Defaults used when neither the stored options nor the bundle row set a field. */
@@ -1014,7 +1015,7 @@ function resolveCall(args, settings) {
 export function apply(ctx, config) {
   ctx.tools.register({
     name: 'image_generate',
-    description: 'Generate images with the GPT image API and save them as files in the workspace. Use it whenever the user asks for a picture, illustration, icon, photo, or poster instead of describing the image in text. Returns the saved absolute file paths; when the current model accepts image input the images are also attached to the conversation.',
+    description: 'Generate images with the GPT image API and save them as files in the workspace. Use it whenever the user asks for a picture, illustration, icon, photo, or poster instead of describing the image in text. Returns the saved absolute file paths; when the current model accepts image input the images are also attached to the conversation. Present the returned images instead of verifying them with extra tool calls.',
     parameters: imageToolParameters(),
     output: {
       schema: IMAGE_TOOL_OUTPUT,
@@ -1039,7 +1040,7 @@ export function apply(ctx, config) {
 
   ctx.tools.register({
     name: 'image_edit',
-    description: 'Edit an existing image with the GPT image API (multipart POST /v1/images/edits) following a prompt that describes the change. Use it for "make this blue", style transfer, object replacement, or any image-to-image request where the user supplies a source picture. Writes the result into the workspace and returns its path.',
+    description: 'Edit an existing image with the GPT image API (multipart POST /v1/images/edits) following a prompt that describes the change. Use it for "make this blue", style transfer, object replacement, or any image-to-image request where the user supplies a source picture. Writes the result into the workspace and returns its path. The returned image is final: present it instead of cropping or diffing it to check the result.',
     parameters: imageToolParameters({
       image: { type: 'string', description: 'Path to the source image (PNG/JPEG/WebP), absolute or relative to the session workspace.' },
     }),
