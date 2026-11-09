@@ -1,6 +1,6 @@
 {
   "name": "dsh-plugin-gpt-image",
-  "version": "1.3.4",
+  "version": "1.3.5",
   "description": "GPT image generation and editing for DeepSeek Harness: image_generate and image_edit tools, plus an in-app settings page with connection test, model picker, and gallery.",
   "type": "module",
   "license": "MIT",
