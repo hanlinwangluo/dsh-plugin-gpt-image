@@ -53,6 +53,17 @@ export const ROUTES = {
 /** Largest accepted request body for the configuration route. */
 const MAX_BODY_BYTES = 64 * 1024
 
+/**
+ * Prompt section registered with the Harness. Tool descriptions alone leave the
+ * model free to draw with code (PIL/numpy/canvas), which is slow and does not
+ * use the configured image model, so the policy states the rule every step.
+ */
+const IMAGE_POLICY = `## Image work
+- When the user asks for a new picture, illustration, icon, poster, avatar, or any other visual asset, call \`image_generate\`.
+- When the user asks to change an existing image (recolor, restyle, replace or remove an object, extend the frame), call \`image_edit\` with that file.
+- Do not produce a picture by writing code — image libraries (PIL, numpy, opencv, sharp), ffmpeg filters, canvas, or hand-written SVG — unless the user explicitly asks for programmatic batch processing or pixel-exact operations that a generative model cannot express.
+- If a request needs both, generate or edit the image with the tool first, then use code only for non-visual steps such as resizing files or building a contact sheet.`
+
 /** Defaults used when neither the stored options nor the bundle row set a field. */
 const DEFAULTS = {
   baseUrl: 'https://ai.stjapi.com',
@@ -1063,6 +1074,11 @@ export function apply(ctx, config) {
       return configure(config, args ?? {})
     },
   })
+
+  const systemPrompt = ctx.get('systemPrompt')
+  if (systemPrompt !== undefined && typeof systemPrompt.section === 'function') {
+    ctx.effect(() => systemPrompt.section({ name: 'gpt-image', order: 200, text: IMAGE_POLICY }))
+  }
 
   const webServer = ctx.get('webServer')
   if (webServer !== undefined && typeof webServer.register === 'function') {
