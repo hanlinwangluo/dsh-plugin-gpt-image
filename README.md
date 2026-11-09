@@ -9,7 +9,7 @@
 默认中转 `https://ai.stjapi.com`，默认模型 `gpt-image-2.6-flare`。生成的图片写进工作区
 `gpt-images/`，当前模型支持图片输入时会一并附到对话里。
 
-- 包名：`dsh-plugin-gpt-image`　版本：`1.3.3`
+- 包名：`dsh-plugin-gpt-image`　版本：`1.3.4`
 - 适配：DSH `>=0.2.1-0 <0.3.0`（`engines.dsh`，不满足时安装会被明确拒绝）
 - 运行时零第三方依赖，只需要 Node 内置能力
 
@@ -49,7 +49,8 @@
 
 - **测试连接**：用保存的密钥请求 `/v1/models`，返回成功或失败原因与耗时，不消耗生图额度
 - **获取模型列表**：填充模型输入框的候选
-- **最近生成**：缩略图网格，点开看原图（按生成时所在的工作区读取）
+- **侧边栏「最近生成」**：左侧边栏新增一个图库入口（`sidebar.panellist` + `main`），点开是当前工作区
+  `gpt-images/` 的缩略图网格，点图看原图，面板内可刷新
 
 配置优先级：设置页/工具保存的值 → `cordis.patch.yml` 的 `config` → 环境变量
 `GPT_IMAGE_API_KEY` → 内置默认值。同一个操作也能让 Agent 用 `image_configure` 改。
