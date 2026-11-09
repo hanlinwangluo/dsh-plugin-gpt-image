@@ -4,9 +4,9 @@
 
 | 渠道 | 状态 |
 |---|---|
-| GitHub | 已上传，`main` 分支最新提交 `v1.3.0` |
+| GitHub | 已上传，`main` 分支最新提交 `v1.3.1` |
 | Gitee | 待「导入 GitHub 仓库」镜像 |
-| npm | 已发布 `1.2.0`；`1.3.0` 待发布 |
+| npm | 已发布 `1.2.0`；`1.3.1` 待发布 |
 
 仓库地址：
 
@@ -69,8 +69,8 @@ powershell -NoProfile -ExecutionPolicy Bypass -File "C:\Users\admin\Documents\de
 
 也可以在网页上传：`https://github.com/hanlinwangluo/dsh-plugin-gpt-image/upload/main`。
 
-发布 Release：仓库右侧 **Releases → Create a new release**，tag 写 `v1.3.0`，把
-`dist/dsh-plugin-gpt-image-1.3.0.tgz` 作为附件上传，得到可直接安装的 tgz 直链。
+发布 Release：仓库右侧 **Releases → Create a new release**，tag 写 `v1.3.1`，把
+`dist/dsh-plugin-gpt-image-1.3.1.tgz` 作为附件上传，得到可直接安装的 tgz 直链。
 
 ## 4. 后续发新版
 
@@ -108,7 +108,7 @@ DSH 的可选 bundle `@deepseek-ai/dsh-experimental-plugin-market-bundle` 提供
       "metadata": { "category": "tools", "keywords": ["image", "gpt-image", "text-to-image", "image-edit", "deepseek-harness"] },
       "versions": [
         {
-          "version": "1.3.0",
+          "version": "1.3.1",
           "publishTimestamp": 1794201600,
           "source": { "type": "git", "url": "https://github.com/hanlinwangluo/dsh-plugin-gpt-image", "commit": "<该版本的 commit sha>" },
           "engines": { "dsh": ">=0.2.1-0 <0.3.0" }
